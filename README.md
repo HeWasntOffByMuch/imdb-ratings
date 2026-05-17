@@ -1,6 +1,6 @@
 # ★ IMDb Ratings Overlay — Firefox Extension
 
-Automatically shows IMDb ratings on Netflix, Disney+, Max (HBO), Prime Video, Apple TV+, Hulu — and any streaming site you add.
+Automatically shows movie and TV ratings on Netflix, Disney+, Max (HBO), Prime Video, Apple TV+, Hulu — and any streaming site you add. Uses the TMDb API, so titles in Polish, German, Japanese, and other languages are resolved correctly without any translation step.
 
 ---
 
@@ -17,8 +17,8 @@ Automatically shows IMDb ratings on Netflix, Disney+, Max (HBO), Prime Video, Ap
 
 ## Setup
 
-### 1. Get a free OMDB API key
-Go to [omdbapi.com/apikey.aspx](https://www.omdbapi.com/apikey.aspx) and sign up for a **free key** (1,000 requests/day).
+### 1. Get a free TMDb API key
+Go to [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), create a free account, and copy the **API Key (v3 auth)** string. No daily request limit.
 
 ### 2. Enter your API key
 Click the extension icon → **Settings** tab → paste your key → **Save**.
@@ -28,10 +28,14 @@ Click the extension icon → **Settings** tab → paste your key → **Save**.
 ## Features
 
 ### Rating Badges
-- Gold stars overlaid on every movie/show card
+- Gold star overlaid on every movie/show card
 - Color-coded: 🟢 ≥7.5 · 🟡 6–7.4 · 🔴 <6
-- Click any badge to open the IMDb page
+- Hover for title, year, score, and genre
+- Click any badge to open the IMDb page (falls back to TMDb if no IMDb ID)
 - Ratings cached for 7 days (Settings → Clear Cache to reset)
+
+### Multilingual Title Support
+TMDb's search engine understands localized titles natively — searching "Skazani na Shawshank", "Ojciec chrzestny", or "기생충" all resolve to the correct film. When the original title differs from the local one, both are shown in the badge tooltip.
 
 ### Built-in Sites
 | Site | Domain |
@@ -44,10 +48,10 @@ Click the extension icon → **Settings** tab → paste your key → **Save**.
 | Hulu | hulu.com |
 
 ### Element Picker
-Navigate to the **Sites** tab, expand a site, and click **🎯 Pick Card Element on Page**. The popup closes, and you can click any movie card on the streaming site — the CSS selector is automatically captured and added.
+Navigate to the **Sites** tab, expand a site, and click **🎯 Pick Card Element on Page**. The popup closes and you click any movie card on the streaming site — the CSS selector is automatically captured and saved.
 
 ### Custom Sites
-Go to **Sites** → enter a site name and domain → **Add Site**. Then use the element picker or manually type CSS selectors.
+Go to **Sites** → enter a site name and domain → **Add Site**. Then use the element picker or type CSS selectors manually for both the card container and the title element.
 
 ---
 
@@ -56,7 +60,7 @@ Go to **Sites** → enter a site name and domain → **Add Site**. Then use the 
 ```
 imdb-ratings-extension/
 ├── manifest.json       # Extension manifest (MV2)
-├── background.js       # OMDB API fetcher + cache
+├── background.js       # TMDb API fetcher + cache
 ├── content.js          # Page scanner + badge injector + element picker
 ├── overlay.css         # Badge + picker styles (injected into pages)
 ├── popup.html          # Extension popup UI
@@ -75,5 +79,6 @@ imdb-ratings-extension/
 | `activeTab` | Communicate with the current tab for element picker |
 | `storage` | Save API key, site configs, and ratings cache |
 | `<all_urls>` | Inject rating badges on any streaming site |
+| `https://api.themoviedb.org/*` | Fetch ratings from TMDb |
 
-No data is ever sent anywhere except to OMDB's API for title lookups.
+No data is ever sent anywhere except to TMDb's API for title lookups.
