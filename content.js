@@ -184,20 +184,28 @@
 
     badge.className = `imdb-rating-badge ${colorClass}`;
     badge.innerHTML = `<span class="imdb-star">★</span><span class="imdb-score">${score}</span>`;
+
+    const displayTitle = data.originalTitle && data.originalTitle !== data.title
+      ? `${data.title} (${data.originalTitle})`
+      : data.title;
+
     badge.title = [
-      data.title,
+      displayTitle,
       data.year,
-      `IMDb: ${data.imdbRating} (${data.imdbVotes} votes)`,
-      data.rottenTomatoes ? `RT: ${data.rottenTomatoes}` : "",
-      data.metascore ? `Meta: ${data.metascore}` : "",
+      `TMDb: ${data.imdbRating}/10 (${data.imdbVotes})`,
+      data.genre,
     ].filter(Boolean).join("\n");
 
-    const imdbUrl = `https://www.imdb.com/title/${data.imdbID}/`;
+    // Link to IMDb if we have the ID, else TMDb
+    const url = data.imdbID
+      ? `https://www.imdb.com/title/${data.imdbID}/`
+      : `https://www.themoviedb.org/${data.type === "tv" ? "tv" : "movie"}/${data.tmdbID}`;
+
     badge.style.cursor = "pointer";
     badge.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(imdbUrl, "_blank");
+      window.open(url, "_blank");
     });
   }
 

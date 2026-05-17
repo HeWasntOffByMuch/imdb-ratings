@@ -51,7 +51,7 @@ function renderAll() {
 function renderApiStatus() {
   const el = document.getElementById("api-status");
   if (settings.apiKey) {
-    el.innerHTML = `<div class="status-pill ok"><span class="status-dot"></span>API key saved</div>`;
+    el.innerHTML = `<div class="status-pill ok"><span class="status-dot"></span>TMDb API key saved</div>`;
   } else {
     el.innerHTML = `<div class="status-pill error"><span class="status-dot"></span>No API key — ratings won't load</div>`;
   }

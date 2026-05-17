@@ -396,19 +396,19 @@
 
 <!-- Settings Panel -->
 <div class="panel active" id="panel-settings">
-  <p class="section-label">OMDB API Key</p>
+  <p class="section-label">TMDb API Key</p>
   <div class="input-row">
-    <input type="password" id="api-key-input" placeholder="Paste your OMDB API key…">
+    <input type="password" id="api-key-input" placeholder="Paste your TMDb API key…">
     <button class="btn btn-gold" id="save-key-btn">Save</button>
   </div>
   <div id="api-status"></div>
-  <p class="hint">Free key at <a href="https://www.omdbapi.com/apikey.aspx" target="_blank">omdbapi.com</a> — 1,000 requests/day</p>
+  <p class="hint">Free key at <a href="https://www.themoviedb.org/settings/api" target="_blank">themoviedb.org</a> — no daily limit · supports Polish &amp; all languages</p>
 
   <div class="divider"></div>
 
   <p class="section-label">Cache</p>
   <button class="btn btn-ghost" id="clear-cache-btn">Clear cached ratings</button>
-  <p class="hint" style="margin-top:5px">Ratings are cached for 7 days to avoid hitting API limits.</p>
+  <p class="hint" style="margin-top:5px">Ratings are cached for 7 days to reduce API calls.</p>
 </div>
 
 <!-- Sites Panel -->
@@ -429,7 +429,11 @@
 <div class="panel" id="panel-about">
   <div class="about-block">
     <strong>How it works</strong><br>
-    The extension scans streaming sites for movie/show cards, extracts titles, then fetches ratings from the OMDB API and overlays them as badges.
+    The extension scans streaming sites for movie/show cards, extracts titles (in any language), searches the TMDb API, and overlays ratings as badges. Clicking a badge opens the IMDb page.
+  </div>
+  <div class="about-block">
+    <strong>Multilingual support</strong><br>
+    TMDb natively understands Polish, German, Japanese, and most other languages — no translation step needed. Searching "Skazani na Shawshank" works just as well as "The Shawshank Redemption".
   </div>
   <div class="about-block">
     <strong>Built-in sites</strong><br>
@@ -442,7 +446,7 @@
   <div class="about-block">
     <strong>Badge colours</strong><br>
     🟢 ≥ 7.5 &nbsp; 🟡 6–7.4 &nbsp; 🔴 below 6<br>
-    Click any badge to open its IMDb page.
+    Scores are TMDb 0–10 ratings (same scale as IMDb).
   </div>
 </div>
 
