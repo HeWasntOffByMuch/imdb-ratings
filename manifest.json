@@ -1,0 +1,33 @@
+{
+  "manifest_version": 2,
+  "name": "IMDb Ratings Overlay",
+  "version": "1.0.0",
+  "description": "Shows IMDb ratings on Netflix, Disney+, HBO Max, and any streaming site",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "IMDb Ratings"
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "96": "icons/icon96.png"
+  },
+  "web_accessible_resources": ["overlay.css"]
+}
