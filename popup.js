@@ -284,6 +284,23 @@ function setupListeners() {
     document.querySelector('[data-tab="sites"]').click();
   });
 
+  // Sync remote selectors
+  document.getElementById("sync-selectors-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("sync-selectors-btn");
+    const status = document.getElementById("sync-status");
+    btn.disabled = true;
+    btn.textContent = "Syncing…";
+    await browser.runtime.sendMessage({ type: "SYNC_SELECTORS" });
+    const stored = await browser.storage.local.get(["remoteSelectors", "remoteSelectorsFetchedAt"]);
+    const count = stored.remoteSelectors?.length || 0;
+    const when = stored.remoteSelectorsFetchedAt
+      ? new Date(stored.remoteSelectorsFetchedAt).toLocaleTimeString() : "—";
+    status.innerHTML = `<div class="status-pill ok" style="margin-top:6px"><span class="status-dot"></span>${count} sites synced at ${when}</div>`;
+    btn.disabled = false;
+    btn.textContent = "↓ Sync selectors from GitHub";
+    browser.tabs.sendMessage(currentTabId, { type: "RELOAD_SETTINGS" }).catch(() => {});
+  });
+
   // Refresh ratings
   document.getElementById("refresh-btn").addEventListener("click", () => {
     browser.tabs.sendMessage(currentTabId, { type: "RELOAD_SETTINGS" }).catch(() => {});

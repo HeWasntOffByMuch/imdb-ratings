@@ -1,10 +1,42 @@
-// Background script — uses TMDb API for multilingual title lookup + ratings
-// TMDb supports searching in any language natively (Polish, German, Japanese, etc.)
+// Background script — TMDb API + periodic remote selector sync from GitHub
 // Flow: local title → TMDb search (multilingual) → get TMDb score + IMDb ID → cache
 
 const CACHE_KEY_PREFIX = "imdb_cache_";
-const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;          // 7 days
+const SELECTORS_TTL = 6 * 60 * 60 * 1000;            // 6 hours
+const SELECTORS_URL = "https://raw.githubusercontent.com/HeWasntOffByMuch/imdb-ratings/master/selectors.json";
 const TMDB_BASE = "https://api.themoviedb.org/3";
+
+// ─── Startup: fetch remote selectors if stale ─────────────────────────────────
+
+browser.runtime.onInstalled.addListener(() => fetchRemoteSelectors());
+browser.alarms.create("syncSelectors", { periodInMinutes: 360 }); // every 6h
+browser.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === "syncSelectors") fetchRemoteSelectors();
+});
+
+async function fetchRemoteSelectors() {
+  try {
+    // Skip if recently fetched
+    const { remoteSelectorsFetchedAt } = await browser.storage.local.get("remoteSelectorsFetchedAt");
+    if (remoteSelectorsFetchedAt && Date.now() - remoteSelectorsFetchedAt < SELECTORS_TTL) return;
+
+    const resp = await fetch(SELECTORS_URL, { cache: "no-cache" });
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (!json.sites || !Array.isArray(json.sites)) return;
+
+    await browser.storage.local.set({
+      remoteSelectors: json.sites,
+      remoteSelectorsFetchedAt: Date.now(),
+    });
+    console.log(`[IMDb Ratings] Synced ${json.sites.length} site configs from GitHub`);
+  } catch (e) {
+    console.warn("[IMDb Ratings] Could not fetch remote selectors:", e.message);
+  }
+}
+
+// ─── Message handler ──────────────────────────────────────────────────────────
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "FETCH_RATING") {
@@ -12,7 +44,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
   if (message.type === "GET_SETTINGS") {
-    browser.storage.local.get(["apiKey", "siteConfigs", "enabled"]).then(sendResponse);
+    browser.storage.local
+      .get(["apiKey", "siteConfigs", "enabled", "remoteSelectors"])
+      .then(sendResponse);
     return true;
   }
   if (message.type === "SAVE_SETTINGS") {
@@ -23,19 +57,29 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     clearCache().then(() => sendResponse({ ok: true }));
     return true;
   }
+  if (message.type === "SYNC_SELECTORS") {
+    // Force re-fetch by clearing the timestamp first
+    browser.storage.local.remove("remoteSelectorsFetchedAt").then(() =>
+      fetchRemoteSelectors().then(() => sendResponse({ ok: true }))
+    );
+    return true;
+  }
   if (message.type === "ELEMENT_PICKED") {
-    browser.runtime.sendMessage({ type: "ELEMENT_PICKED", selector: message.selector, tabId: sender.tab.id });
+    browser.runtime.sendMessage({
+      type: "ELEMENT_PICKED",
+      selector: message.selector,
+      tabId: sender.tab.id,
+    });
     sendResponse({ ok: true });
     return true;
   }
 });
 
-// ─── Main fetch ───────────────────────────────────────────────────────────────
+// ─── Main rating fetch ────────────────────────────────────────────────────────
 
 async function fetchRating(title, year) {
   const cacheKey = CACHE_KEY_PREFIX + slugify(title) + (year ? "_" + year : "");
 
-  // Cache hit
   try {
     const stored = await browser.storage.local.get(cacheKey);
     if (stored[cacheKey]) {
@@ -49,13 +93,13 @@ async function fetchRating(title, year) {
   const { apiKey } = await browser.storage.local.get("apiKey");
   if (!apiKey) return { error: "NO_API_KEY" };
 
-  // Search movie and TV in parallel, then pick highest vote_count winner
+  // Search movie and TV in parallel, pick highest vote_count
   let [movieResult, tvResult] = await Promise.all([
     searchTMDb(apiKey, title, year, "movie"),
     searchTMDb(apiKey, title, year, "tv"),
   ]);
 
-  // Retry without year if both came up empty
+  // Retry without year if both empty
   if (!movieResult && !tvResult && year) {
     [movieResult, tvResult] = await Promise.all([
       searchTMDb(apiKey, title, null, "movie"),
@@ -63,7 +107,6 @@ async function fetchRating(title, year) {
     ]);
   }
 
-  // Pick the one with more votes — avoids a low-vote movie shadowing a popular TV series
   let result = null;
   if (movieResult && tvResult) {
     result = movieResult.rawVoteCount >= tvResult.rawVoteCount ? movieResult : tvResult;
@@ -82,17 +125,8 @@ async function fetchRating(title, year) {
 async function searchTMDb(apiKey, title, year, mediaType) {
   try {
     const endpoint = mediaType === "tv" ? "search/tv" : "search/movie";
-    const params = new URLSearchParams({
-      api_key: apiKey,
-      query: title,
-      include_adult: false,
-    });
-    if (year) {
-      params.set(
-        mediaType === "tv" ? "first_air_date_year" : "primary_release_year",
-        year
-      );
-    }
+    const params = new URLSearchParams({ api_key: apiKey, query: title, include_adult: false });
+    if (year) params.set(mediaType === "tv" ? "first_air_date_year" : "primary_release_year", year);
 
     const resp = await fetch(`${TMDB_BASE}/${endpoint}?${params}`);
     if (!resp.ok) return null;
@@ -116,28 +150,20 @@ async function searchTMDb(apiKey, title, year, mediaType) {
 async function fetchTMDbDetails(apiKey, tmdbId, mediaType) {
   try {
     const endpoint = mediaType === "tv" ? `tv/${tmdbId}` : `movie/${tmdbId}`;
-    const params = new URLSearchParams({
-      api_key: apiKey,
-      append_to_response: "external_ids",
-    });
+    const params = new URLSearchParams({ api_key: apiKey, append_to_response: "external_ids" });
 
     const resp = await fetch(`${TMDB_BASE}/${endpoint}?${params}`);
     if (!resp.ok) return null;
     const d = await resp.json();
 
-    const imdbId = d.external_ids?.imdb_id || null;
-    const score = d.vote_average ? d.vote_average.toFixed(1) : "N/A";
-    const votes = d.vote_count ? d.vote_count.toLocaleString() : "N/A";
     const title = d.title || d.name || "Unknown";
-    const year = (d.release_date || d.first_air_date || "").slice(0, 4);
-
     return {
       title,
       originalTitle: d.original_title || d.original_name || title,
-      year,
-      imdbRating: score,        // TMDb 0–10 score, same scale as IMDb
-      imdbVotes: votes,
-      imdbID: imdbId,           // real IMDb ID for deep-link
+      year: (d.release_date || d.first_air_date || "").slice(0, 4),
+      imdbRating: d.vote_average ? d.vote_average.toFixed(1) : "N/A",
+      imdbVotes: d.vote_count ? d.vote_count.toLocaleString() : "N/A",
+      imdbID: d.external_ids?.imdb_id || null,
       tmdbID: d.id,
       type: mediaType,
       genre: (d.genres || []).map(g => g.name).join(", "),
@@ -156,8 +182,8 @@ async function cacheResult(key, data) {
 
 async function clearCache() {
   const all = await browser.storage.local.get(null);
-  const cacheKeys = Object.keys(all).filter(k => k.startsWith(CACHE_KEY_PREFIX));
-  if (cacheKeys.length > 0) await browser.storage.local.remove(cacheKeys);
+  const keys = Object.keys(all).filter(k => k.startsWith(CACHE_KEY_PREFIX));
+  if (keys.length > 0) await browser.storage.local.remove(keys);
 }
 
 function slugify(str) {

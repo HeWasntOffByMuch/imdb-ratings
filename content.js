@@ -86,15 +86,37 @@
 
   function getActiveConfigs() {
     const host = location.hostname;
-    const builtIn = BUILTIN_CONFIGS.filter(c => {
+
+    // Start with built-in configs, then overlay remote selectors on top
+    const remoteSelectors = settings.remoteSelectors || [];
+    const mergedBuiltins = BUILTIN_CONFIGS.map(builtin => {
+      const remote = remoteSelectors.find(r => r.id === builtin.id);
+      if (!remote) return builtin;
+      // Merge: combine built-in + remote selectors (deduped), remote wins for new entries
+      return {
+        ...builtin,
+        selectors: [...new Set([...builtin.selectors, ...(remote.selectors || [])])],
+        titleSelectors: [...new Set([...builtin.titleSelectors, ...(remote.titleSelectors || [])])],
+      };
+    });
+
+    // Also include any brand-new sites from remote that aren't in BUILTIN_CONFIGS
+    const newRemoteSites = remoteSelectors.filter(r => !BUILTIN_CONFIGS.find(b => b.id === r.id));
+
+    const allBase = [...mergedBuiltins, ...newRemoteSites];
+
+    const active = allBase.filter(c => {
       const matches = Array.isArray(c.match) ? c.match : [c.match];
       return matches.some(m => host.includes(m));
     });
+
+    // Local user-defined custom sites
     const custom = (settings.siteConfigs || []).filter(c => {
       const matches = Array.isArray(c.match) ? c.match : [c.match || host];
       return matches.some(m => host.includes(m));
     });
-    return [...builtIn, ...custom];
+
+    return [...active, ...custom];
   }
 
   function startObserver() {

@@ -5,10 +5,12 @@
   "description": "Shows IMDb ratings on Netflix, Disney+, HBO Max, and any streaming site",
   "permissions": [
     "activeTab",
+    "alarms",
     "storage",
     "tabs",
     "<all_urls>",
-    "https://api.themoviedb.org/*"
+    "https://api.themoviedb.org/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "background": {
     "scripts": ["background.js"],

@@ -1,0 +1,97 @@
+{
+  "_comment": "Community selector database for the IMDb Ratings Firefox Extension.",
+  "_repo": "https://github.com/HeWasntOffByMuch/imdb-ratings",
+  "_updated": "2026-05-18",
+  "sites": [
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "match": "netflix.com",
+      "selectors": [
+        ".title-card .title-card-container",
+        ".slider-item .title-card-container",
+        ".jaw-bone-container .title-card-container",
+        ".previewModal--player-titleTreatmentWrapper"
+      ],
+      "titleSelectors": [
+        ".fallback-text",
+        ".title-card-title-text",
+        "[data-uia='title-card-series-title']"
+      ]
+    },
+    {
+      "id": "disneyplus",
+      "name": "Disney+",
+      "match": "disneyplus.com",
+      "selectors": [
+        "[class*='ContentCard']",
+        "[class*='TileContainer']",
+        "[data-testid='card-container']",
+        "[class*='StandardCard']"
+      ],
+      "titleSelectors": [
+        "[class*='CardTitle']",
+        "[class*='TileTitle']",
+        "[data-testid='card-title']"
+      ]
+    },
+    {
+      "id": "hbomax",
+      "name": "Max (HBO)",
+      "match": ["hbomax.com", "max.com"],
+      "selectors": [
+        "[data-testid='tile']",
+        "[class*='TileContainer']",
+        "[class*='StandardTile']",
+        ".content-container"
+      ],
+      "titleSelectors": [
+        "[data-testid='tile-title']",
+        "[class*='TileTitle']",
+        "[class*='content-title']"
+      ]
+    },
+    {
+      "id": "primevideo",
+      "name": "Prime Video",
+      "match": "primevideo.com",
+      "selectors": [
+        "[data-testid='card']",
+        "._1KyIhFb3X0",
+        "[class*='DVWebNode-Card']"
+      ],
+      "titleSelectors": [
+        "[data-testid='card-title']",
+        "._eP8EI1yx2"
+      ]
+    },
+    {
+      "id": "appletv",
+      "name": "Apple TV+",
+      "match": "tv.apple.com",
+      "selectors": [
+        "[class*='shelf-grid-item']",
+        "[class*='canvas-lockup']",
+        "[class*='product-lockup']"
+      ],
+      "titleSelectors": [
+        "[class*='product-name']",
+        "[class*='lockup-title']"
+      ]
+    },
+    {
+      "id": "hulu",
+      "name": "Hulu",
+      "match": "hulu.com",
+      "selectors": [
+        "[class*='entity-card']",
+        "[class*='GridItem']",
+        "[data-automationid='tile']"
+      ],
+      "titleSelectors": [
+        "[class*='entity-title']",
+        "[class*='card-title']"
+      ]
+    }
+  ]
+}
