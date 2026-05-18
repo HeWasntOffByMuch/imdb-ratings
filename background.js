@@ -85,7 +85,12 @@ async function searchTMDb(apiKey, title, year, mediaType) {
     const data = await resp.json();
     if (!data.results || data.results.length === 0) return null;
 
-    const best = data.results[0];
+    let results = data.results;
+    if (results.length > 1) {
+      const filtered = results.filter(r => r.vote_count >= 1000);
+      if (filtered.length > 0) results = filtered;
+    }
+    const best = results.sort((a, b) => b.vote_count - a.vote_count)[0];
     return await fetchTMDbDetails(apiKey, best.id, mediaType);
   } catch (e) {
     return null;
