@@ -49,12 +49,26 @@ async function fetchRating(title, year) {
   const { apiKey } = await browser.storage.local.get("apiKey");
   if (!apiKey) return { error: "NO_API_KEY" };
 
-  // Try movie, then TV; retry without year if no results
-  let result = await searchTMDb(apiKey, title, year, "movie");
-  if (!result) result = await searchTMDb(apiKey, title, year, "tv");
-  if (!result && year) {
-    result = await searchTMDb(apiKey, title, null, "movie");
-    if (!result) result = await searchTMDb(apiKey, title, null, "tv");
+  // Search movie and TV in parallel, then pick highest vote_count winner
+  let [movieResult, tvResult] = await Promise.all([
+    searchTMDb(apiKey, title, year, "movie"),
+    searchTMDb(apiKey, title, year, "tv"),
+  ]);
+
+  // Retry without year if both came up empty
+  if (!movieResult && !tvResult && year) {
+    [movieResult, tvResult] = await Promise.all([
+      searchTMDb(apiKey, title, null, "movie"),
+      searchTMDb(apiKey, title, null, "tv"),
+    ]);
+  }
+
+  // Pick the one with more votes — avoids a low-vote movie shadowing a popular TV series
+  let result = null;
+  if (movieResult && tvResult) {
+    result = movieResult.rawVoteCount >= tvResult.rawVoteCount ? movieResult : tvResult;
+  } else {
+    result = movieResult || tvResult;
   }
 
   if (!result) return { error: "NOT_FOUND", title };
@@ -91,7 +105,9 @@ async function searchTMDb(apiKey, title, year, mediaType) {
       if (filtered.length > 0) results = filtered;
     }
     const best = results.sort((a, b) => b.vote_count - a.vote_count)[0];
-    return await fetchTMDbDetails(apiKey, best.id, mediaType);
+    const details = await fetchTMDbDetails(apiKey, best.id, mediaType);
+    if (details) details.rawVoteCount = best.vote_count;
+    return details;
   } catch (e) {
     return null;
   }
