@@ -11,14 +11,12 @@
         ".title-card .title-card-container",
         ".slider-item .title-card-container",
         ".jaw-bone-container .title-card-container",
-        ".previewModal--player-titleTreatmentWrapper",
-        "div[data-virtual-slot]"
+        ".previewModal--player-titleTreatmentWrapper"
       ],
       "titleSelectors": [
         ".fallback-text",
         ".title-card-title-text",
-        "[data-uia='title-card-series-title']",
-        "div[data-virtual-slot] a[aria-label]"
+        "[data-uia='title-card-series-title']"
       ]
     },
     {
@@ -42,10 +40,15 @@
       "name": "Max (HBO)",
       "match": ["hbomax.com", "max.com"],
       "selectors": [
-        "div:has(a[href][aria-label])"
+        "[data-testid='tile']",
+        "[class*='TileContainer']",
+        "[class*='StandardTile']",
+        ".content-container"
       ],
       "titleSelectors": [
-        "a[href][aria-label]"
+        "[data-testid='tile-title']",
+        "[class*='TileTitle']",
+        "[class*='content-title']"
       ]
     },
     {
